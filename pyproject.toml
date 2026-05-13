@@ -56,3 +56,10 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 testpaths = ["tests", "evals"]
 asyncio_mode = "auto"
+# Default: skip integration tests. `uv run` auto-loads .env, which would otherwise
+# make the skipif-on-keys condition useless and trigger ~8-minute real-API runs from
+# a plain `pytest` invocation. Opt in explicitly via `pytest -m integration` or `make test-integration`.
+addopts = "-m 'not integration'"
+markers = [
+    "integration: hits real APIs (ANTHROPIC_API_KEY + TAVILY_API_KEY); off by default, opt in via -m integration",
+]

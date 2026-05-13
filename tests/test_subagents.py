@@ -1,4 +1,9 @@
-"""Phase 1 sanity: each sub-agent stub returns a valid Pydantic object."""
+"""Sanity: each sub-agent stub returns a valid Pydantic object.
+
+Explorer is now real and tested in tests/test_explorer.py — it's not
+included here because (a) it needs API keys and (b) the malformed-submit
+case is exercised there with a fake client.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +13,6 @@ from frame.schemas.state import EntryMode, FrameState
 from frame.subagents import (
     critic,
     definer,
-    explorer,
     ideator,
     prioritizer,
     synthesizer,
@@ -18,11 +22,6 @@ from frame.subagents import (
 @pytest.fixture
 def state() -> FrameState:
     return FrameState(entry_mode=EntryMode.IDEA_ONLY, seed_idea="x")
-
-
-async def test_explorer_returns_exploration(state: FrameState) -> None:
-    result = await explorer.run(state)
-    assert result.seed_idea == "x"
 
 
 async def test_synthesizer_returns_candidates(state: FrameState) -> None:
