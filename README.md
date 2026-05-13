@@ -8,31 +8,68 @@ Local-only. CLI-only. Single user. Built as both a working tool and a portfolio 
 
 ---
 
-## Pipeline
+## Architecture
 
 ```mermaid
-flowchart LR
-    I[Idea] --> E[Explorer]
-    E --> S[Synthesizer]
-    S -.GATE 1.-> Pl[locked problem]
-    Pl --> Id[Ideator]
-    Id --> Pr[Prioritizer]
-    Pr -.GATE 2.-> Sl[locked solution]
-    Sl --> D[Definer]
-    D --> C[Critic]
-    C --> P[PRD + Killed-Solutions appendix]
+flowchart TB
+    User(["User runs: make explore IDEA=&quot;...&quot; CONFIRM=yes"])
 
-    style E fill:#9ed
-    style S fill:#fcc
-    style Id fill:#fcc
-    style Pr fill:#fcc
-    style D fill:#fcc
-    style C fill:#fcc
+    subgraph orch ["Orchestration — supervisor decides what runs next, enforces gates"]
+        direction LR
+        state["FrameState<br/>Pydantic, JSON-snapshotable"]
+        supervisor["supervisor.py<br/>phase enforcement"]
+        gates["HITL gates<br/>blocking Rich prompts"]
+    end
+
+    subgraph agents ["Sub-agents (frame/subagents/) — each is its own Claude conversation, called by supervisor as a tool"]
+        direction LR
+        explorer["Explorer ✓<br/>problem divergence"]
+        synth["Synthesizer<br/>problem convergence"]
+        ideator["Ideator<br/>solution divergence"]
+        prio["Prioritizer<br/>solution convergence"]
+        definer["Definer<br/>PRD + metrics"]
+        critic["Critic<br/>scope, metrics, assumptions"]
+    end
+
+    subgraph mcp ["Tool layer (mcp_servers/*/tools.py) — inline Python; same impls wrap as standalone MCP servers"]
+        direction LR
+        etools["Explorer tools ✓<br/>web_search, fetch_forums,<br/>ingest_evidence, map_stakeholders,<br/>surface_assumptions, submit_exploration"]
+        otools["5 other tool modules<br/>(scaffold)"]
+        obs["obsidian_mcp<br/>(real MCP server, Phase 2.10)"]
+    end
+
+    subgraph ext ["External services"]
+        direction LR
+        anthropic["Claude API<br/>Sonnet 4.6"]
+        tavily["Tavily search"]
+        vault["Obsidian vault"]
+        langfuse["Langfuse<br/>(Phase 2.11)"]
+    end
+
+    User --> supervisor
+    supervisor --> explorer
+    explorer --> etools
+    etools -.->|HTTP| tavily
+    explorer -.->|messages.create| anthropic
+    obs -.->|writes| vault
+    supervisor -.->|trace| langfuse
+
+    classDef live fill:#86efac,color:#052e16,stroke:#16a34a,stroke-width:2px
+    classDef scaffold fill:#fecdd3,color:#4c0519,stroke:#e11d48,stroke-width:1px
+    classDef entry fill:#fde68a,color:#451a03,stroke:#d97706,stroke-width:2px
+    classDef external fill:#1f2937,color:#f9fafb,stroke:#4b5563
+
+    class User entry
+    class explorer,etools live
+    class synth,ideator,prio,definer,critic,otools,obs scaffold
+    class anthropic,tavily,vault,langfuse external
 ```
 
-Green = wired and tested. Pink = scaffolded but not yet built.
+**Green nodes are wired and tested. Pink nodes are scaffolded but not yet built. Yellow is the user entry point. Dark grey is external.**
 
-**Two human-in-the-loop gates** stop the supervisor cold. Gate 1 forces a problem statement to be locked before the pipeline can enter solution space. Gate 2 forces a solution to be locked before it can enter the output phase. Killed solutions stay visible in the final PRD as an "Alternatives Considered" appendix with `reason_killed` for each.
+**Runtime flow:** `Idea → Explorer → Synthesizer → [GATE 1: lock problem] → Ideator → Prioritizer → [GATE 2: lock solution] → Definer → Critic → PRD (with Alternatives Considered appendix containing every killed solution and its reason_killed).`
+
+The two human-in-the-loop gates stop the supervisor cold. Gate 1 forces a problem statement to be locked before the pipeline can enter solution space. Gate 2 forces a solution to be locked before it can enter the output phase. Killed solutions stay visible in the final PRD with `reason_killed` and `revisit_conditions`.
 
 ---
 
