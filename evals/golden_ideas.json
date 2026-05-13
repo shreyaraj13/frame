@@ -1,0 +1,4 @@
+{
+  "_comment": "Phase 2 fills this with 15 golden product ideas across verticals (B2B SaaS, marketplace, consumer mobile, fintech, healthtech). Each entry: { id, idea, vertical, expected_problem_hints, expected_solution_axes, expected_killed_signals }.",
+  "ideas": []
+}

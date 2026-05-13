@@ -1,0 +1,58 @@
+[project]
+name = "frame"
+version = "0.1.0"
+description = "Multi-agent PM workflow tool — vague idea → defensible PRD"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Shreya Raj", email = "shreyaaraj13@gmail.com" }]
+dependencies = [
+    "anthropic>=0.40.0",
+    "mcp>=1.0.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "langfuse>=2.40.0",
+    "python-dotenv>=1.0.0",
+    "tavily-python>=0.3.0",
+]
+
+[project.optional-dependencies]
+embeddings = [
+    "sentence-transformers>=2.5.0",
+    "hdbscan>=0.8.33",
+    "numpy>=1.26.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "deepeval>=0.21.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+]
+
+[project.scripts]
+frame = "frame.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["frame"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "evals"]
+asyncio_mode = "auto"
